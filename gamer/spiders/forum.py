@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 import json
 import re
 import scrapy
+from ..items import ForumItem, TopicItem, PostItem, CommendItem
 
 
 class ForumCrawler(scrapy.Spider):
@@ -40,9 +41,10 @@ class ForumCrawler(scrapy.Spider):
         for forum in res:
             forum_id = forum['bsn']
             forum_name = forum['title']
-            print("看板ID:{},看板名稱:{}".format(
-                forum_id,
-                forum_name))
+            Forum = ForumItem()
+            Forum['forum_id'] = forum_id
+            Forum['forum_name'] = forum_name
+            yield(Forum)
             headers = dict(self.headers)
             headers.update({'referer': "https://forum.gamer.com.tw/A.php?bsn={}".format(forum_id)})
             forum_url = "https://forum.gamer.com.tw/B.php?&bsn={}".format(forum_id)
@@ -71,23 +73,21 @@ class ForumCrawler(scrapy.Spider):
                     topic_datetime = datetime.strptime(topic_datetime, '%Y/%m/%d %H:%M')
                 else:
                     continue
-                topic_id = topic.find('td', {'class': 'b-list__summary'}).a['name']
+                topic_id = int(topic.find('td', {'class': 'b-list__summary'}).a['name'])
                 topic_name = topic.find('td', {'class': 'b-list__main'}).find(['p', 'a'], {'class': 'b-list__main__title'}).get_text()
                 topic_author = topic.find('td', {'class': 'b-list__count'}).find('p', {'class': 'b-list__count__user'}).get_text().strip()
-                topic_reply_count = topic.find('td', {'class': 'b-list__count'}).find_all('span')[0]['title'].split('：')[1]
-                topic_view_count = topic.find('td', {'class': 'b-list__count'}).find_all('span')[1]['title'].split('：')[1]
                 topic_multi_page = topic.find('span', {'class': 'b-list__main__pages'})
                 topic_first_page = response.urljoin(topic.find('td', {'class': 'b-list__main'}).a['href'])
-                same_forum = re.match(".*(bsn={})".format(forum_id), topic_first_page)
+                same_forum = re.match(r".*(bsn={})".format(forum_id), topic_first_page)
                 if topic_datetime > self.before and same_forum:
                     catch_count += 1
-                    print("主題ID:{},主題標題:{},主題作者:{},主題互動:{},主題人氣:{},最新回覆時間:{}".format(
-                        topic_id,
-                        topic_name,
-                        topic_author,
-                        topic_reply_count,
-                        topic_view_count,
-                        topic_datetime))
+                    Topic = TopicItem()
+                    Topic['forum_id'] = forum_id
+                    Topic['topic_id'] = topic_id
+                    Topic['topic_name'] = topic_name
+                    Topic['topic_author'] = topic_author
+                    Topic['topic_datetime'] = topic_datetime
+                    yield(Topic)
                     if topic_multi_page:
                         if topic_multi_page.find_all('span', {'class': 'b-list__page'}):
                             topic_last_page = response.urljoin(topic_multi_page.find_all('span', {'class': 'b-list__page'})[-1]['data-page'])
@@ -127,19 +127,22 @@ class ForumCrawler(scrapy.Spider):
             total_count += 1
             post_datetime = post.find('a', {'class': 'edittime tippy-post-info'}).get('data-mtime')
             post_datetime = datetime.strptime(post_datetime, '%Y-%m-%d %H:%M:%S')
-            post_id = post['id'].split('_')[1]
-            post_floor = post.find('a', {'class': 'floor'})['data-floor']
+            post_id = int(post['id'].split('_')[1])
+            post_floor = int(post.find('a', {'class': 'floor'})['data-floor'])
             post_author = post.find('a', {'class': 'userid'}).get_text()
             post_content = post.find('div', {'class': 'c-article__content'}).get_text().strip()
             post_has_commend = post.find('div', {'class': 'c-reply__item'}, id=re.compile(r'^Commendcontent_\d+$'))
             if post_datetime > self.before:
                 catch_count += 1
-                print("文章ID:{},文章樓層:{},文章作者:{},文章內容:{},文章時間:{}".format(
-                    post_id,
-                    post_floor,
-                    post_author,
-                    post_content,
-                    post_datetime))
+                Post = PostItem()
+                Post['forum_id'] = forum_id
+                Post['topic_id'] = topic_id
+                Post['post_id'] = post_id
+                Post['post_floor'] = post_floor
+                Post['post_author'] = post_author
+                Post['post_content'] = post_content
+                Post['post_datetime'] = post_datetime
+                yield(Post)
                 if post_has_commend:
                     commend_url = "https://forum.gamer.com.tw/ajax/moreCommend.php?bsn={}&snB={}&returnHtml=0".format(forum_id, post_id)
                     headers = dict(self.headers)
@@ -149,7 +152,6 @@ class ForumCrawler(scrapy.Spider):
                                          callback=self.commend_parse,
                                          cb_kwargs={
                                              'bsn': forum_id,
-                                             'snA': topic_id,
                                              'snB': post_id
                                          })
         if catch_count == total_count and topic_has_prev:
@@ -164,10 +166,9 @@ class ForumCrawler(scrapy.Spider):
                                      'snA': topic_id
                                  })
 
-    def commend_parse(self, response, bsn, snA, snB):
+    def commend_parse(self, response, bsn, snB):
         res = response.json()
         forum_id = bsn
-        topic_id = snA
         post_id = snB
         for key, value in res.items():
             if key.isdigit():
@@ -175,14 +176,17 @@ class ForumCrawler(scrapy.Spider):
                     commend_datetime = datetime.strptime(value['wtime'], '%Y-%m-%d %H:%M:%S')
                 else:
                     commend_datetime = datetime.strptime(value['mtime'], '%Y-%m-%d %H:%M:%S')
-                commend_id = value['sn']
+                commend_id = int(value['sn'])
                 commend_floor = int(key) + 1
                 commend_author = value['userid']
                 commend_content = value['content']
                 if commend_datetime > self.before:
-                    print("評論ID:{},評論樓層:{},評論作者:{},評論內容:{},評論時間:{}".format(
-                        commend_id,
-                        commend_floor,
-                        commend_author,
-                        commend_content,
-                        commend_datetime))
+                    Commend = CommendItem()
+                    Commend['forum_id'] = forum_id
+                    Commend['post_id'] = post_id
+                    Commend['commend_id'] = commend_id
+                    Commend['commend_floor'] = commend_floor
+                    Commend['commend_author'] = commend_author
+                    Commend['commend_content'] = commend_content
+                    Commend['commend_datetime'] = commend_datetime
+                    yield(Commend)
