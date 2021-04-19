@@ -55,56 +55,56 @@ class ForumCrawler(scrapy.Spider):
         soup = BeautifulSoup(response.body, 'lxml')
         forum_id = bsn
         forum_has_next = soup.find('a', {'class': 'next'})
-        topic_list = soup.find('table', {'class': 'b-list'})
+        topic_list_exist = soup.find('table', {'class': 'b-list'})
         catch_count = 0
         total_count = 0
-        for topic in topic_list.find_all(
-                'tr', {'class': ['b-list__row b-list-item b-imglist-item', 'b-list__row b-list__row--sticky b-list-item b-imglist-item']}):
-            total_count += 1
-            topic_datetime = topic.find('p', {'class': 'b-list__time__edittime'}).get_text().strip()
-            if '今日' in topic_datetime:
-                topic_datetime = topic_datetime.replace('今日', self.today.strftime('%Y/%m/%d'))
-                topic_datetime = datetime.strptime(topic_datetime, '%Y/%m/%d %H:%M')
-            elif '昨日' in topic_datetime:
-                topic_datetime = topic_datetime.replace('昨日', self.yesterday.strftime('%Y/%m/%d'))
-                topic_datetime = datetime.strptime(topic_datetime, '%Y/%m/%d %H:%M')
-            else:
-                continue
-            topic_id = topic.find('td', {'class': 'b-list__summary'}).a['name']
-            topic_name = topic.find('td', {'class': 'b-list__main'}).find(['p', 'a'], {'class': 'b-list__main__title'}).get_text()
-            topic_author = topic.find('td', {'class': 'b-list__count'}).find('p', {'class': 'b-list__count__user'}).get_text().strip()
-            topic_reply_count = topic.find('td', {'class': 'b-list__count'}).find_all('span')[0]['title'].split('：')[1]
-            topic_view_count = topic.find('td', {'class': 'b-list__count'}).find_all('span')[1]['title'].split('：')[1]
-            topic_multi_page = topic.find('span', {'class': 'b-list__main__pages'})
-            topic_first_page = response.urljoin(topic.find('td', {'class': 'b-list__main'}).a['href'])
-            if topic_datetime > self.before:
-                catch_count += 1
-                print("主題ID:{},主題標題:{},主題作者:{},主題互動:{},主題人氣:{},最新回覆時間:{}".format(
-                    topic_id,
-                    topic_name,
-                    topic_author,
-                    topic_reply_count,
-                    topic_view_count,
-                    topic_datetime))
-                if topic_multi_page:
-                    if topic_multi_page.find_all('span', {'class': 'b-list__page'}):
-                        topic_last_page = response.urljoin(topic_multi_page.find_all('span', {'class': 'b-list__page'})[-1]['data-page'])
-                    else:
-                        topic_last_page = response.urljoin(topic_multi_page.find_all('a')[-1]['href'])
-                    post_url = topic_last_page
+        if topic_list_exist:
+            for topic in topic_list_exist.find_all(
+                    'tr', {'class': ['b-list__row b-list-item b-imglist-item', 'b-list__row b-list__row--sticky b-list-item b-imglist-item']}):
+                total_count += 1
+                topic_datetime = topic.find('p', {'class': 'b-list__time__edittime'}).get_text().strip()
+                if '今日' in topic_datetime:
+                    topic_datetime = topic_datetime.replace('今日', self.today.strftime('%Y/%m/%d'))
+                    topic_datetime = datetime.strptime(topic_datetime, '%Y/%m/%d %H:%M')
+                elif '昨日' in topic_datetime:
+                    topic_datetime = topic_datetime.replace('昨日', self.yesterday.strftime('%Y/%m/%d'))
+                    topic_datetime = datetime.strptime(topic_datetime, '%Y/%m/%d %H:%M')
                 else:
-                    post_url = topic_first_page
-                headers = dict(self.headers)
-                headers.update({'referer': response.url})
-                yield scrapy.Request(url=post_url,
-                                     headers=headers,
-                                     callback=self.post_parse,
-                                     cb_kwargs={
-                                         'bsn':
-                                         forum_id,
-                                         'snA':
-                                         topic_id
-                                     })
+                    continue
+                topic_id = topic.find('td', {'class': 'b-list__summary'}).a['name']
+                topic_name = topic.find('td', {'class': 'b-list__main'}).find(['p', 'a'], {'class': 'b-list__main__title'}).get_text()
+                topic_author = topic.find('td', {'class': 'b-list__count'}).find('p', {'class': 'b-list__count__user'}).get_text().strip()
+                topic_reply_count = topic.find('td', {'class': 'b-list__count'}).find_all('span')[0]['title'].split('：')[1]
+                topic_view_count = topic.find('td', {'class': 'b-list__count'}).find_all('span')[1]['title'].split('：')[1]
+                topic_multi_page = topic.find('span', {'class': 'b-list__main__pages'})
+                topic_first_page = response.urljoin(topic.find('td', {'class': 'b-list__main'}).a['href'])
+                same_forum = re.match(".*(bsn={})".format(forum_id), topic_first_page)
+                if topic_datetime > self.before and same_forum:
+                    catch_count += 1
+                    print("主題ID:{},主題標題:{},主題作者:{},主題互動:{},主題人氣:{},最新回覆時間:{}".format(
+                        topic_id,
+                        topic_name,
+                        topic_author,
+                        topic_reply_count,
+                        topic_view_count,
+                        topic_datetime))
+                    if topic_multi_page:
+                        if topic_multi_page.find_all('span', {'class': 'b-list__page'}):
+                            topic_last_page = response.urljoin(topic_multi_page.find_all('span', {'class': 'b-list__page'})[-1]['data-page'])
+                        else:
+                            topic_last_page = response.urljoin(topic_multi_page.find_all('a')[-1]['href'])
+                        post_url = topic_last_page
+                    else:
+                        post_url = topic_first_page
+                    headers = dict(self.headers)
+                    headers.update({'referer': response.url})
+                    yield scrapy.Request(url=post_url,
+                                         headers=headers,
+                                         callback=self.post_parse,
+                                         cb_kwargs={
+                                             'bsn': forum_id,
+                                             'snA': topic_id
+                                         })
         if catch_count == total_count and forum_has_next:
             next_page = response.urljoin(forum_has_next.get('href'))
             forum_url = next_page
