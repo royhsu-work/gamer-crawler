@@ -64,13 +64,13 @@ class ForumCrawler(scrapy.Spider):
             for topic in topic_list_exist.find_all(
                     'tr', {'class': ['b-list__row b-list-item b-imglist-item', 'b-list__row b-list__row--sticky b-list-item b-imglist-item']}):
                 total_count += 1
-                topic_datetime = topic.find('p', {'class': 'b-list__time__edittime'}).get_text().strip()
-                if '今日' in topic_datetime:
-                    topic_datetime = topic_datetime.replace('今日', self.today.strftime('%Y/%m/%d'))
-                    topic_datetime = datetime.strptime(topic_datetime, '%Y/%m/%d %H:%M')
-                elif '昨日' in topic_datetime:
-                    topic_datetime = topic_datetime.replace('昨日', self.yesterday.strftime('%Y/%m/%d'))
-                    topic_datetime = datetime.strptime(topic_datetime, '%Y/%m/%d %H:%M')
+                topic_last_time = topic.find('p', {'class': 'b-list__time__edittime'}).get_text().strip()
+                if '今日' in topic_last_time:
+                    topic_last_time = topic_last_time.replace('今日', self.today.strftime('%Y/%m/%d'))
+                    topic_last_time = datetime.strptime(topic_last_time, '%Y/%m/%d %H:%M')
+                elif '昨日' in topic_last_time:
+                    topic_last_time = topic_last_time.replace('昨日', self.yesterday.strftime('%Y/%m/%d'))
+                    topic_last_time = datetime.strptime(topic_last_time, '%Y/%m/%d %H:%M')
                 else:
                     continue
                 topic_id = int(topic.find('td', {'class': 'b-list__summary'}).a['name'])
@@ -79,14 +79,14 @@ class ForumCrawler(scrapy.Spider):
                 topic_multi_page = topic.find('span', {'class': 'b-list__main__pages'})
                 topic_first_page = response.urljoin(topic.find('td', {'class': 'b-list__main'}).a['href'])
                 same_forum = re.match(r".*(bsn={})".format(forum_id), topic_first_page)
-                if topic_datetime > self.before and same_forum:
+                if topic_last_time > self.before and same_forum:
                     catch_count += 1
                     Topic = TopicItem()
                     Topic['forum_id'] = forum_id
                     Topic['topic_id'] = topic_id
                     Topic['topic_name'] = topic_name
                     Topic['topic_author'] = topic_author
-                    Topic['topic_datetime'] = topic_datetime
+                    Topic['topic_last_time'] = topic_last_time
                     yield(Topic)
                     if topic_multi_page:
                         if topic_multi_page.find_all('span', {'class': 'b-list__page'}):
@@ -125,14 +125,14 @@ class ForumCrawler(scrapy.Spider):
         total_count = 0
         for post in post_list:
             total_count += 1
-            post_datetime = post.find('a', {'class': 'edittime tippy-post-info'}).get('data-mtime')
-            post_datetime = datetime.strptime(post_datetime, '%Y-%m-%d %H:%M:%S')
+            post_time = post.find('a', {'class': 'edittime tippy-post-info'}).get('data-mtime')
+            post_time = datetime.strptime(post_time, '%Y-%m-%d %H:%M:%S')
             post_id = int(post['id'].split('_')[1])
             post_floor = int(post.find('a', {'class': 'floor'})['data-floor'])
             post_author = post.find('a', {'class': 'userid'}).get_text()
             post_content = post.find('div', {'class': 'c-article__content'}).get_text().strip()
             post_has_commend = post.find('div', {'class': 'c-reply__item'}, id=re.compile(r'^Commendcontent_\d+$'))
-            if post_datetime > self.before:
+            if post_time > self.before:
                 catch_count += 1
                 Post = PostItem()
                 Post['forum_id'] = forum_id
@@ -141,7 +141,7 @@ class ForumCrawler(scrapy.Spider):
                 Post['post_floor'] = post_floor
                 Post['post_author'] = post_author
                 Post['post_content'] = post_content
-                Post['post_datetime'] = post_datetime
+                Post['post_time'] = post_time
                 yield(Post)
                 if post_has_commend:
                     commend_url = "https://forum.gamer.com.tw/ajax/moreCommend.php?bsn={}&snB={}&returnHtml=0".format(forum_id, post_id)
@@ -173,14 +173,14 @@ class ForumCrawler(scrapy.Spider):
         for key, value in res.items():
             if key.isdigit():
                 if value['mtime'] == '0000-00-00 00:00:00':
-                    commend_datetime = datetime.strptime(value['wtime'], '%Y-%m-%d %H:%M:%S')
+                    commend_time = datetime.strptime(value['wtime'], '%Y-%m-%d %H:%M:%S')
                 else:
-                    commend_datetime = datetime.strptime(value['mtime'], '%Y-%m-%d %H:%M:%S')
+                    commend_time = datetime.strptime(value['mtime'], '%Y-%m-%d %H:%M:%S')
                 commend_id = int(value['sn'])
                 commend_floor = int(key) + 1
                 commend_author = value['userid']
                 commend_content = value['content']
-                if commend_datetime > self.before:
+                if commend_time > self.before:
                     Commend = CommendItem()
                     Commend['forum_id'] = forum_id
                     Commend['post_id'] = post_id
@@ -188,5 +188,5 @@ class ForumCrawler(scrapy.Spider):
                     Commend['commend_floor'] = commend_floor
                     Commend['commend_author'] = commend_author
                     Commend['commend_content'] = commend_content
-                    Commend['commend_datetime'] = commend_datetime
+                    Commend['commend_time'] = commend_time
                     yield(Commend)

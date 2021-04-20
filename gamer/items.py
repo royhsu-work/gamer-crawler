@@ -22,7 +22,7 @@ class TopicItem(scrapy.Item):
     topic_id = scrapy.Field()
     topic_name = scrapy.Field()
     topic_author = scrapy.Field()
-    topic_datetime = scrapy.Field()
+    topic_last_time = scrapy.Field()
 
 
 class PostItem(scrapy.Item):
@@ -32,7 +32,7 @@ class PostItem(scrapy.Item):
     post_floor = scrapy.Field()
     post_author = scrapy.Field()
     post_content = scrapy.Field()
-    post_datetime = scrapy.Field()
+    post_time = scrapy.Field()
 
 
 class CommendItem(scrapy.Item):
@@ -42,4 +42,4 @@ class CommendItem(scrapy.Item):
     commend_floor = scrapy.Field()
     commend_author = scrapy.Field()
     commend_content = scrapy.Field()
-    commend_datetime = scrapy.Field()
+    commend_time = scrapy.Field()

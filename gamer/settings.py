@@ -62,9 +62,9 @@ ROBOTSTXT_OBEY = False
 
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
-#ITEM_PIPELINES = {
-#    'gamer.pipelines.GamerPipeline': 300,
-#}
+ITEM_PIPELINES = {
+   'gamer.pipelines.GamerPipeline': 300,
+}
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See https://docs.scrapy.org/en/latest/topics/autothrottle.html
@@ -89,3 +89,12 @@ ROBOTSTXT_OBEY = False
 
 # Custom Settings
 LOG_LEVEL = 'INFO'
+CONNECTION_STRING = 'sqlite:///gamer_crawler.db'
+# CONNECTION_STRING = "{drivername}://{user}:{passwd}@{host}:{port}/{db_name}?charset=utf8".format(
+#     drivername="mysql+pymysql",
+#     user="DB_USER",
+#     passwd="DB_PASSWORD",
+#     host="DB_HOST",
+#     port="DB_PORT",
+#     db_name="DB_NAME"
+#     )
