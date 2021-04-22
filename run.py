@@ -5,9 +5,10 @@ from scrapy.crawler import CrawlerRunner
 from scrapy.utils.project import get_project_settings
 import time
 
+LOG_LEVEL = get_project_settings().get('LOG_LEVEL')
 LOGGING_FORMAT = '%(asctime)s [%(name)s.%(funcName)s] %(levelname)s: %(message)s'
 DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
-logging.basicConfig(level=logging.INFO, format=LOGGING_FORMAT, datefmt=DATE_FORMAT)
+logging.basicConfig(level=LOG_LEVEL, format=LOGGING_FORMAT, datefmt=DATE_FORMAT)
 
 
 def job():
