@@ -119,7 +119,7 @@ class ForumCrawler(scrapy.Spider):
         soup = BeautifulSoup(response.body, 'lxml')
         forum_id = bsn
         topic_id = snA
-        topic_has_prev = soup.find('a', {'class': 'prev'}).get('href')
+        topic_has_prev = soup.find('a', {'class': 'prev'})
         post_list = soup.find_all('section', {'class': 'c-section'}, id=re.compile(r'^post_\d+$'))
         catch_count = 0
         total_count = 0
@@ -155,7 +155,7 @@ class ForumCrawler(scrapy.Spider):
                                              'snB': post_id
                                          })
         if catch_count == total_count and topic_has_prev:
-            post_url = response.urljoin(topic_has_prev)
+            post_url = response.urljoin(topic_has_prev.get('href'))
             headers = dict(self.headers)
             headers.update({'referer': response.url})
             yield scrapy.Request(url=post_url,
