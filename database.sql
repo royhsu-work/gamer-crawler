@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- 主機： db
--- 產生時間： 2021 年 04 月 26 日 03:55
+-- 產生時間： 2021 年 04 月 26 日 06:49
 -- 伺服器版本： 5.7.33
 -- PHP 版本： 7.4.16
 
@@ -51,7 +51,7 @@ CREATE TABLE IF NOT EXISTS `commends` (
 
 CREATE TABLE IF NOT EXISTS `forums` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `forum_name` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `forum_name` varchar(80) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

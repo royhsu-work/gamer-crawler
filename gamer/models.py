@@ -21,7 +21,7 @@ def create_table(engine):
 class Forum(Base):
     __tablename__ = 'forums'
     id = Column(Integer, primary_key=True)
-    name = Column('forum_name', String(50))
+    name = Column('forum_name', String(80))
 
 
 class User(Base):
