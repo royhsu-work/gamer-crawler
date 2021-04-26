@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- 主機： db
--- 產生時間： 2021 年 04 月 20 日 09:26
+-- 產生時間： 2021 年 04 月 26 日 03:55
 -- 伺服器版本： 5.7.33
 -- PHP 版本： 7.4.16
 
@@ -67,7 +67,7 @@ CREATE TABLE IF NOT EXISTS `posts` (
   `forum_id` int(11) NOT NULL,
   `post_floor` int(11) DEFAULT NULL,
   `posting_time` datetime DEFAULT NULL,
-  `post_content` text COLLATE utf8mb4_unicode_ci,
+  `post_content` mediumtext COLLATE utf8mb4_unicode_ci,
   `user_id` int(11) DEFAULT NULL,
   PRIMARY KEY (`id`,`topic_id`,`forum_id`),
   KEY `topic_id` (`topic_id`),
