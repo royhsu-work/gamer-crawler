@@ -63,7 +63,9 @@ class ForumCrawler(scrapy.Spider):
         if topic_list_exist:
             for topic in topic_list_exist.find_all(
                     'tr', {'class': ['b-list__row b-list-item b-imglist-item', 'b-list__row b-list__row--sticky b-list-item b-imglist-item']}):
-                total_count += 1
+                general_topic = not topic.find('div', {'class': 'b-list__summary__mark b-mark b-mark--update'})
+                if general_topic:
+                    total_count += 1
                 topic_last_time = topic.find('p', {'class': 'b-list__time__edittime'}).get_text().strip()
                 if '今日' in topic_last_time:
                     topic_last_time = topic_last_time.replace('今日', self.today.strftime('%Y/%m/%d'))
@@ -80,7 +82,8 @@ class ForumCrawler(scrapy.Spider):
                 topic_first_page = response.urljoin(topic.find('td', {'class': 'b-list__main'}).a['href'])
                 same_forum = re.match(r".*(bsn={})".format(forum_id), topic_first_page)
                 if topic_last_time > self.before and same_forum:
-                    catch_count += 1
+                    if general_topic:
+                        catch_count += 1
                     Topic = TopicItem()
                     Topic['forum_id'] = forum_id
                     Topic['topic_id'] = topic_id
