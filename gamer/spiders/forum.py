@@ -14,12 +14,12 @@ class ForumCrawler(scrapy.Spider):
     ]
     start_urls.insert(0, 'https://forum.gamer.com.tw/')
     headers = {'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.114 Safari/537.36'}
-    now = datetime.today()
-    today = now.date()
-    yesterday = today - timedelta(days=1)
-    before = now - timedelta(days=2)
 
     def start_requests(self):
+        now = datetime.today()
+        self.today = now.date()
+        self.yesterday = self.today - timedelta(days=1)
+        self.before = now - timedelta(days=2)
         for start_url in self.start_urls:
             if start_url == 'https://forum.gamer.com.tw/':
                 headers = dict(self.headers)
